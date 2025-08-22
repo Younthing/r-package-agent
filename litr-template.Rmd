@@ -1,0 +1,186 @@
+---
+title: "Creating the ``r params$package_name`` R package"
+author: "Your Name"
+date: "The Date"
+knit: litr::render
+output: litr::litr_html_document
+params:
+  package_name: "template"
+  package_parent_dir: "." # <-- relative to this file's location
+---
+
+<!-- 
+这个 Rmd 文件包含了定义 R 包所需的全部代码。
+在 RStudio 中点击 "Knit" 按钮，或运行 `litr::render("文件名.Rmd")` 来生成 R 包。
+记住：当你想要修改 R 包的任何内容时，应该修改这个文档，而不是生成的包。
+
+使用说明：
+1. 修改 params 部分的 package_name 为你的包名
+2. 更新作者信息和包描述
+3. 添加你的函数和测试
+4. 运行 Knit 生成包
+-->
+
+# 使用 litr 进行 R 包开发
+
+这是一个使用 `litr` 包进行文学化编程的 R 包开发模板。`litr` 允许我们在单个 R Markdown 文件中编写完整的 R 包，包括函数定义、文档、测试和依赖管理。
+
+## 什么是 litr？
+
+`litr` (Literate Programming) 是一个支持在 R Markdown 文档中创建完整 R 包的工具。它的优势包括：
+
+- **一体化开发**：在单个文件中管理代码、文档、测试
+- **可重现性**：确保文档与代码始终同步
+- **易于维护**：所有修改都在源文档中进行
+
+## 基本使用流程
+
+1. **编辑此文件**：修改函数、测试和文档
+2. **生成包**：运行 `litr::render("create-template.Rmd")`
+3. **安装包**：生成的包可直接安装使用
+
+## Package setup
+
+We start by specifying the information needed in the DESCRIPTION file of the R package.
+
+```{r package-setup, message=FALSE, results='hide'}
+usethis::create_package(
+  path = ".",
+  fields = list(
+    Package = params$package_name,
+    Version = "0.0.0.9000",
+    Title = "Template for R Package Development with Literate Programming",
+    Description = "This package serves as a comprehensive template for R package development using the litr package. It demonstrates how to create, document, and test R packages using literate programming principles within a single R Markdown file. Includes examples of function definition, documentation, testing, and dependency management.",
+    `Authors@R`= c(
+      person(
+        given = "Fan",
+        family = "Xing",
+        email = "fanxingfu3344@gmail.com",
+        role = c("aut", "cre"),
+        comment = c(ORCID = "0000-0002-8883-7598"))
+      )
+    )
+)
+usethis::use_mit_license(copyright_holder = "Fan Xing")
+usethis::use_package("ggplot2", type = "Imports")
+usethis::use_package("testthat", type = "Suggests")
+```
+
+## Now to the package itself
+
+### 函数定义示例
+
+- 使用代码块的`send_to`选项控制生成的源代码位置
+
+```{r send_to="R/hello.R"}
+#' Say hello to someone
+#' 
+#' @param name Name of a person
+#' @param exclamation Whether to include an exclamation mark
+#' @return A character string with greeting
+#' @examples 
+#' say_hello("World")
+#' say_hello("R", exclamation = FALSE)
+#' @export 
+say_hello <- function(name, exclamation = TRUE) {
+  if (!is.character(name) || length(name) != 1) {
+    stop("name must be a single character string")
+  }
+  paste0("Hello ", name, ifelse(exclamation, "!", "."))
+}
+```
+
+**重要提示：** 以 `#'` 开头的代码块会被添加到 R 包中，而普通的代码块仅用于演示和测试。
+
+让我们测试函数：
+
+```{r}
+# 测试问候函数
+say_hello("World")
+say_hello("R User", exclamation = FALSE)
+
+```
+
+### 测试函数
+
+编写测试确保函数按预期工作。以 `test_that(` 开头的代码块会被自动添加为包的测试：
+
+```{r}
+testthat::test_that("say_hello works correctly", {
+  # 基本功能测试
+  testthat::expect_equal(say_hello("World"), "Hello World!")
+  testthat::expect_equal(say_hello("R", exclamation = FALSE), "Hello R.")
+  
+  # 错误处理测试
+  testthat::expect_error(say_hello(123), "name must be a single character string")
+  testthat::expect_error(say_hello(c("A", "B")), "name must be a single character string")
+  testthat::expect_error(say_hello(NA), "name must be a single character string")
+})
+
+```
+
+**测试说明：** 包含 `test_that(` 的代码块会自动成为包的测试文件。
+
+### 数据示例
+
+### 创建数据集
+
+在这个例子中，我们将从零开始创建数据。当然，我们也可以从其他来源获取数据。
+
+```{r}
+set.seed(123)
+n <- 100
+x <- rnorm(n)
+y <- 2 * x + 0.3 * rnorm(n)
+mydata <- data.frame(x = x, y = y)
+```
+
+现在，把它保存到包里：
+
+```{r}
+usethis::use_data(mydata)
+```
+
+同时我们还需要为数据集编写文档：
+
+```{r}
+#' A regression data set
+#' 
+#' @format A data frame with 100 rows and 2 variables:
+#' \describe{
+#' \item{x}{a predictor variable}
+#' \item{y}{a response variable}
+#' }
+#' @source This data was simulated.  But usually we might cite a source here.
+"mydata"
+```
+
+## 使用最佳实践
+
+### litr 开发流程
+
+1. **编写代码：** 在此 Rmd 文件中编写所有函数
+2. **添加文档：** 使用 roxygen2 格式 (`#'`) 为函数添加文档
+3. **编写测试：** 使用 `testthat::test_that()` 编写测试
+4. **生成包：** 运行下面的代码块生成完整的 R 包
+
+### 重要规则
+
+- **函数代码：** 以 `#'` 开头的代码块会成为包的一部分
+- **测试代码：** 包含 `test_that(` 的代码块会成为测试文件
+- **演示代码：** 普通代码块仅用于演示，不会包含在最终包中
+- **依赖管理：** 使用 `usethis::use_package()` 声明依赖
+
+## 文档生成和构建
+
+运行以下命令来文档化、构建和安装包：
+
+```{r}
+litr::document() # <-- use instead of devtools::document()
+goodpractice::gp()
+devtools::build()
+# devtools::install()
+# devtools::check(document = FALSE)
+
+# 可选：检查包的完整性
+```
